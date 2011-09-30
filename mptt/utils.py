@@ -7,8 +7,8 @@ import csv
 import itertools
 import sys
 
-__all__ = ('previous_current_next', 'tree_item_iterator',
-           'drilldown_tree_for_node')
+__all__ = ('previous_current_next', 'tree_item_iterator', 
+           'drilldown_tree_for_node', 'drilldown_tree_with_children')
 
 
 def previous_current_next(items):
@@ -137,6 +137,37 @@ def drilldown_tree_for_node(node, rel_cls=None, rel_field=None, count_attr=None,
     else:
         children = node.get_children()
     return itertools.chain(node.get_ancestors(), [node], children)
+
+def drilldown_tree_with_children(node):
+    """
+    Creates a drilldown tree for the given node including also
+    children of each node's ancestors.
+    """
+
+    def _build_drilldown(nodes, ancestors, children):
+        """
+        Populate ``items`` with drilled nodes.
+        """
+
+        if len(ancestors) > 0:
+            pos = children.index(ancestors[0])
+
+            nodes.append(children[:pos + 1])
+            _build_drilldown(nodes, ancestors[1:], list(ancestors[0].get_children()))
+            nodes.append(children[pos + 1:])
+
+        else:
+            nodes.append(children)
+
+    drilldown = []
+    ancestors = list(node.get_ancestors())
+    ancestors.append(node)
+
+    if len(ancestors) > 0:
+        drilldown.append([ancestors[0]])
+        _build_drilldown(drilldown, ancestors[1:], list(ancestors[0].get_children()))
+
+    return itertools.chain(*drilldown)
 
 def print_debug_info(qs):
     """

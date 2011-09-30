@@ -9,7 +9,8 @@ from django.utils.encoding import force_unicode
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
 
-from mptt.utils import tree_item_iterator, drilldown_tree_for_node
+from mptt.utils import tree_item_iterator, drilldown_tree_for_node, \
+    drilldown_tree_with_children
 
 register = template.Library()
 
@@ -55,6 +56,16 @@ class DrilldownTreeForNodeNode(template.Node):
 
         context[self.context_var] = drilldown_tree_for_node(*args)
         return ''
+
+class DrilldownTreeWithChildrenNode(template.Node):
+    def __init__(self, node, context_var):
+        self.node        = template.Variable(node)
+        self.context_var = context_var
+
+    def render(self, context):
+        args = [self.node.resolve(context)]
+        context[self.context_var] = drilldown_tree_with_children(*args)
+        return ""
 
 @register.tag
 def full_tree_for_model(parser, token):
@@ -146,6 +157,28 @@ def do_drilldown_tree_for_node(parser, token):
         return DrilldownTreeForNodeNode(bits[1], bits[3], bits[6], bits[8], cumulative=True)
     else:
         return DrilldownTreeForNodeNode(bits[1], bits[3])
+
+@register.tag('drilldown_tree_with_children')
+def do_drilldown_tree_with_children(parser, token):
+    """
+    Populates a template variable with the drilldown tree for a given
+    node including children of each ancestor node.
+
+    Usage::
+
+        {% drilldown_tree_for_node [node] as [varname] %}
+
+    """
+    bits     = token.contents.split()
+    len_bits = len(bits)
+
+    if len_bits != 4:
+        raise template.TemplateSyntaxError(_('%s tag requires three arguments') % bits[0])
+
+    if bits[2] != 'as':
+        raise template.TemplateSyntaxError(_("second argument to %s tag must be 'as'") % bits[0])
+
+    return DrilldownTreeWithChildrenNode(bits[1], bits[3])
 
 @register.filter
 def tree_info(items, features=None):
