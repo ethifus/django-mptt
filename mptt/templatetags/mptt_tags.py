@@ -58,12 +58,16 @@ class DrilldownTreeForNodeNode(template.Node):
         return ''
 
 class DrilldownTreeWithChildrenNode(template.Node):
-    def __init__(self, node, context_var):
+    def __init__(self, node, context_var, root_node=None):
         self.node        = template.Variable(node)
         self.context_var = context_var
+        if root_node:
+            self.root_node = template.Variable(root_node)
 
     def render(self, context):
         args = [self.node.resolve(context)]
+        if self.root_node:
+            args.append(self.root_node.resolve(context))
         context[self.context_var] = drilldown_tree_with_children(*args)
         return ""
 
@@ -164,21 +168,30 @@ def do_drilldown_tree_with_children(parser, token):
     Populates a template variable with the drilldown tree for a given
     node including children of each ancestor node.
 
+    Ancestors can be limited up to and including given root node.
+    
     Usage::
 
         {% drilldown_tree_for_node [node] as [varname] %}
+        {% drilldown_tree_for_node [node] as [varname] with_root [root_node] %}
 
     """
     bits     = token.contents.split()
     len_bits = len(bits)
 
-    if len_bits != 4:
+    if len_bits not in (4, 6):
         raise template.TemplateSyntaxError(_('%s tag requires three arguments') % bits[0])
 
     if bits[2] != 'as':
         raise template.TemplateSyntaxError(_("second argument to %s tag must be 'as'") % bits[0])
 
-    return DrilldownTreeWithChildrenNode(bits[1], bits[3])
+    if len_bits == 6 and bits[4] != 'with_root':
+        raise template.TemplateSyntaxError(_("fourth argument to %s tag must be 'with_root'") % bits[0])
+
+    if len_bits == 4:
+        return DrilldownTreeWithChildrenNode(bits[1], bits[3])
+    else:
+        return DrilldownTreeWithChildrenNode(bits[1], bits[3], bits[5])
 
 @register.filter
 def tree_info(items, features=None):

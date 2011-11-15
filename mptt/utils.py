@@ -138,7 +138,7 @@ def drilldown_tree_for_node(node, rel_cls=None, rel_field=None, count_attr=None,
         children = node.get_children()
     return itertools.chain(node.get_ancestors(), [node], children)
 
-def drilldown_tree_with_children(node):
+def drilldown_tree_with_children(node, root_node=None):
     """
     Creates a drilldown tree for the given node including also
     children of each node's ancestors.
@@ -161,6 +161,14 @@ def drilldown_tree_with_children(node):
 
     drilldown = []
     ancestors = list(node.get_ancestors())
+
+    if root_node:
+        try:
+            index     = ancestors.index(root_node)
+            ancestors = ancestors[index:]
+        except ValueError:
+            pass
+
     ancestors.append(node)
 
     if len(ancestors) > 0:
