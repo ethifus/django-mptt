@@ -14,6 +14,7 @@ __all__ = ('TreeNodeChoiceField', 'TreeNodeMultipleChoiceField', 'TreeNodePositi
 
 # Fields ######################################################################
 
+
 class TreeNodeChoiceField(forms.ModelChoiceField):
     """A ModelChoiceField for tree nodes."""
     def __init__(self, queryset, *args, **kwargs):
@@ -27,11 +28,11 @@ class TreeNodeChoiceField(forms.ModelChoiceField):
             queryset = queryset.order_by(mptt_opts.tree_id_attr, mptt_opts.left_attr)
 
         super(TreeNodeChoiceField, self).__init__(queryset, *args, **kwargs)
-    
+
     def _get_level_indicator(self, obj):
         level = getattr(obj, obj._mptt_meta.level_attr)
         return mark_safe(conditional_escape(self.level_indicator) * level)
-        
+
     def label_from_instance(self, obj):
         """
         Creates labels which represent the tree level of each node when
@@ -40,18 +41,24 @@ class TreeNodeChoiceField(forms.ModelChoiceField):
         level_indicator = self._get_level_indicator(obj)
         return mark_safe(u'%s %s' % (level_indicator, conditional_escape(smart_unicode(obj))))
 
+
 class TreeNodeMultipleChoiceField(TreeNodeChoiceField, forms.ModelMultipleChoiceField):
     """A ModelMultipleChoiceField for tree nodes."""
-    
-    def __init__(self, *args, **kwargs):
+
+    def __init__(self, queryset, *args, **kwargs):
         self.level_indicator = kwargs.pop('level_indicator', u'---')
         if kwargs.get('required', True) and not 'empty_label' in kwargs:
             kwargs['empty_label'] = None
-        
+
+        # if a queryset is supplied, enforce ordering
+        if hasattr(queryset, 'model'):
+            mptt_opts = queryset.model._mptt_meta
+            queryset = queryset.order_by(mptt_opts.tree_id_attr, mptt_opts.left_attr)
+
         # For some reason ModelMultipleChoiceField constructor passes kwargs
         # as args to its super(), which causes 'multiple values for keyword arg'
         # error sometimes. So we skip it (that constructor does nothing anyway!)
-        forms.ModelChoiceField.__init__(self, *args, **kwargs)
+        forms.ModelChoiceField.__init__(self, queryset, *args, **kwargs)
 
 
 class TreeNodePositionField(forms.ChoiceField):
@@ -73,6 +80,7 @@ class TreeNodePositionField(forms.ChoiceField):
             kwargs['choices'] = self.DEFAULT_CHOICES
         super(TreeNodePositionField, self).__init__(*args, **kwargs)
 
+
 # Forms #######################################################################
 
 class MoveNodeForm(forms.Form):
@@ -81,7 +89,7 @@ class MoveNodeForm(forms.Form):
     in its tree to another, with optional restriction of the nodes which
     are valid target nodes for the move.
     """
-    target   = TreeNodeChoiceField(queryset=None)
+    target = TreeNodeChoiceField(queryset=None)
     position = TreeNodePositionField()
 
     def __init__(self, node, *args, **kwargs):
@@ -166,6 +174,6 @@ class MPTTAdminForm(forms.ModelForm):
             if parent.is_descendant_of(self.instance, include_self=True):
                 if opts.parent_attr not in self._errors:
                     self._errors[opts.parent_attr] = forms.util.ErrorList()
-                self._errors[opts.parent_attr].append('Invalid parent')
+                self._errors[opts.parent_attr].append(_('Invalid parent'))
                 del self.cleaned_data[opts.parent_attr]
         return cleaned_data

@@ -29,6 +29,7 @@ def previous_current_next(items):
         pass
     return itertools.izip(previous, current, next)
 
+
 def tree_item_iterator(items, ancestors=False):
     """
     Given a list of tree items, iterates over the list, generating
@@ -97,12 +98,13 @@ def tree_item_iterator(items, ancestors=False):
                                                        opts.level_attr), -1)
         else:
             # All remaining levels need to be closed
-            structure['closed_levels'] = range(current_level, first_item_level-1, -1)
+            structure['closed_levels'] = range(current_level, first_item_level - 1, -1)
 
         # Return a deep copy of the structure dict so this function can
         # be used in situations where the iterator is consumed
         # immediately.
         yield current, copy.deepcopy(structure)
+
 
 def drilldown_tree_for_node(node, rel_cls=None, rel_field=None, count_attr=None,
                             cumulative=False):
@@ -137,6 +139,7 @@ def drilldown_tree_for_node(node, rel_cls=None, rel_field=None, count_attr=None,
     else:
         children = node.get_children()
     return itertools.chain(node.get_ancestors(), [node], children)
+
 
 def drilldown_tree_with_children(node, root_node=None):
     """
@@ -183,6 +186,7 @@ def drilldown_tree_with_children(node, root_node=None):
 
     return itertools.chain(*drilldown)
 
+
 def print_debug_info(qs):
     """
     Given an mptt queryset, prints some debug information to stdout.
@@ -206,14 +210,15 @@ def print_debug_info(qs):
         row = []
         for field in header[:-1]:
             row.append(getattr(n, field))
-        row.append('%s%s' % ('- '*level, unicode(n).encode('utf-8')))
+        row.append('%s%s' % ('- ' * level, unicode(n).encode('utf-8')))
         writer.writerow(row)
 
 
+# NOTE we don't support django 1.1 anymore, so this stuff is likely to get removed soon
 def _exists(qs):
     """
     For Django 1.1 compatibility. (QuerySet.exists() was added in 1.2)
-    
+
     This is not part of the supported mptt API, it may be removed without warning.
     """
     if hasattr(qs, 'exists'):

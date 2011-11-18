@@ -84,13 +84,11 @@ msgstr "Węzeł nie może zostać swoim własnym węzłem potomnym."
 
 #: managers.py:703 managers.py:825
 msgid "A node may not be made a child of any of its descendants."
-msgstr ""
-"Węzeł nie może zostać węzłem potomnym żadnego ze swoich węzłów potomnych."
+msgstr "Węzeł nie może zostać węzłem potomnym żadnego ze swoich węzłów potomnych."
 
 #: managers.py:724
 msgid "A node may not be made a sibling of any of its descendants."
-msgstr ""
-"Węzeł nie może zostać węzłem równożędnym żadnego ze swoich węzłów potomnych."
+msgstr "Węzeł nie może zostać węzłem równożędnym żadnego ze swoich węzłów potomnych."
 
 #: templatetags/mptt_tags.py:29
 #, python-format
