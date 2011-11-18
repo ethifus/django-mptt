@@ -179,7 +179,7 @@ def do_drilldown_tree_for_node(parser, token):
     else:
         return DrilldownTreeForNodeNode(bits[1], bits[3])
 
-<<<<<<< HEAD
+
 @register.tag('drilldown_tree_with_children')
 def do_drilldown_tree_with_children(parser, token):
     """
@@ -210,8 +210,7 @@ def do_drilldown_tree_with_children(parser, token):
         return DrilldownTreeWithChildrenNode(bits[1], bits[3])
     else:
         return DrilldownTreeWithChildrenNode(bits[1], bits[3], bits[5])
-=======
->>>>>>> upstream/master
+
 
 @register.filter
 def tree_info(items, features=None):
