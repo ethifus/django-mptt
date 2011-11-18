@@ -160,16 +160,22 @@ def drilldown_tree_with_children(node, root_node=None):
             nodes.append(children)
 
     drilldown = []
-    ancestors = list(node.get_ancestors())
+    ancestors = []
+            
+    if node == root_node:
+        ancestors.append(node)
 
-    if root_node:
-        try:
-            index     = ancestors.index(root_node)
-            ancestors = ancestors[index:]
-        except ValueError:
-            pass
+    else:
+        ancestors.extend(list(node.get_ancestors()))
 
-    ancestors.append(node)
+        if root_node:
+            try:
+                index     = ancestors.index(root_node)
+                ancestors = ancestors[index:]
+            except ValueError:
+                pass
+
+        ancestors.append(node)
 
     if len(ancestors) > 0:
         drilldown.append([ancestors[0]])
