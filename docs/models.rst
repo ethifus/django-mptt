@@ -25,6 +25,13 @@ Because you're inheriting from MPTTModel, your model will also have a number of
 other fields: ``level``, ``lft``, ``rght``, and ``tree_id``. Most of the time
 you won't need to use these fields directly, but it's helpful to know they're there.
 
+Please note that if you are using multi-inheritance, MPTTModel should usually be the first class to be inherited from::
+
+    class Genre(MPTTModel,Foo,Bar):
+        name = models.CharField(max_length=50, unique=True)
+
+Since MPTTModel inherits from ``models.Model``, this is very important when you have "diamond-style" multiple inheritance : you inherit from two Models that both inherit from the same base class (e.g. ``models.Model``) . In that case, If MPTTModel is not the first Model, you may get errors at Model validation, like ``AttributeError: 'NoneType' object has no attribute 'name'``.
+
 Model Options
 =============
 
@@ -121,7 +128,7 @@ MPTTModel instance methods
 
 Subclasses of MPTTModel have the following instance methods:
 
-``get_ancestors(ascending=False)``
+``get_ancestors(ascending=False, include_self=False)``
 ----------------------------------
 
 creates a ``QuerySet`` containing the ancestors of the model instance.
@@ -129,6 +136,9 @@ creates a ``QuerySet`` containing the ancestors of the model instance.
 These default to being in descending order (root ancestor first,
 immediate parent last); passing ``True`` for the ``ascending`` argument
 will reverse the ordering (immediate parent first, root ancestor last).
+
+If ``include_self`` is ``True``, the ``QuerySet`` will also include the
+model instance itself.
 
 ``get_children()``
 ------------------

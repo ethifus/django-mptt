@@ -1,9 +1,17 @@
 import re
 
+from django.contrib import admin
+from django.db.models import get_models
 from django.test import TestCase
 
+try:
+    import feincms
+except ImportError:
+    feincms = False
+
 from mptt.exceptions import InvalidMove
-from myapp.models import Category, Genre
+from mptt.models import MPTTModel
+from myapp.models import Category, Genre, CustomPKName
 
 
 def get_tree_details(nodes):
@@ -346,3 +354,78 @@ class InterTreeMovementTestCase(TestCase):
 
 class PositionedInsertionTestCase(TestCase):
     pass
+
+
+class BaseManagerInfiniteRecursion(TestCase):
+    """
+    Tests to avoid infinite recursion in managers, which seems to be a recurring bug.
+    """
+    def test_all_managers_are_different(self):
+        # all tree managers should be different. otherwise, possible infinite recursion.
+        seen = {}
+        for model in get_models():
+            if not issubclass(model, MPTTModel):
+                continue
+            tm = model._tree_manager
+            if tm in seen:
+                self.fail("Tree managers for %s and %s are the same manager" % (model.__name__, seen[tm].__name__))
+            seen[tm] = model
+
+    def test_all_managers_have_correct_model(self):
+        # all tree managers should have the correct model.
+        for model in get_models():
+            if not issubclass(model, MPTTModel):
+                continue
+            self.assertEqual(model._tree_manager.model, model)
+
+    def test_base_manager_infinite_recursion(self):
+        # repeatedly calling _base_manager should eventually return None
+        for model in get_models():
+            if not issubclass(model, MPTTModel):
+                continue
+            manager = model._tree_manager
+            for i in range(20):
+                manager = manager._base_manager
+                if manager is None:
+                    break
+            else:
+                self.fail("Detected infinite recursion in %s._tree_manager._base_manager" % model)
+
+
+class CustomPKNameTestCase(TestCase):
+    def setUp(self):
+        c1 = CustomPKName.objects.create(name="c1")
+        c11 = CustomPKName.objects.create(name="c11", parent=c1)
+        c12 = CustomPKName.objects.create(name="c12", parent=c1)
+
+        c2 = CustomPKName.objects.create(name="c2")
+        c21 = CustomPKName.objects.create(name="c21", parent=c2)
+        c22 = CustomPKName.objects.create(name="c22", parent=c2)
+
+        c3 = CustomPKName.objects.create(name="c3")
+
+    def test_get_next_sibling(self):
+        root = CustomPKName.objects.get(name="c12")
+        sib = root.get_next_sibling()
+        self.assertTrue(sib is None)
+
+
+if feincms:
+    class FeinCMSModelAdminTestCase(TestCase):
+        """
+        Tests for FeinCMSModelAdmin.
+        """
+        fixtures = ['categories.json']
+
+        def test_actions_column(self):
+            """
+            The action column should have an "add" button inserted.
+            """
+            from mptt.admin import FeinCMSModelAdmin
+            model_admin = FeinCMSModelAdmin(Category, admin.site)
+
+            category = Category.objects.get(id=1)
+            self.assertTrue(
+                u'<a href="add/?parent=1" title="Add child">' in
+                model_admin._actions_column(category)[0]
+            )

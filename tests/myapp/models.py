@@ -69,6 +69,13 @@ class Tree(MPTTModel):
     parent = models.ForeignKey('self', null=True, blank=True, related_name='children')
 
 
+class NewStyleMPTTMeta(MPTTModel):
+    parent = models.ForeignKey('self', null=True, blank=True, related_name='children')
+
+    class MPTTMeta(object):
+        left_attr = 'testing'
+
+
 class Person(MPTTModel):
     name = models.CharField(max_length=50)
     parent = models.ForeignKey('self', null=True, blank=True, related_name='children')
@@ -86,3 +93,77 @@ class Person(MPTTModel):
 
 class Student(Person):
     type = models.CharField(max_length=50)
+
+
+# for testing various types of inheritance:
+
+# 1. multi-table inheritance, with mptt fields on base class.
+
+class MultiTableInheritanceA1(MPTTModel):
+    parent = models.ForeignKey('self', null=True, blank=True, related_name='children')
+
+
+class MultiTableInheritanceA2(MultiTableInheritanceA1):
+    name = models.CharField(max_length=50)
+
+
+# 2. multi-table inheritance, with mptt fields on child class.
+
+class MultiTableInheritanceB1(MPTTModel):
+    name = models.CharField(max_length=50)
+
+
+class MultiTableInheritanceB2(MultiTableInheritanceB1):
+    parent = models.ForeignKey('self', null=True, blank=True, related_name='children')
+
+
+# 3. abstract models
+
+class AbstractModel(MPTTModel):
+    parent = models.ForeignKey('self', null=True, blank=True, related_name='children')
+    ghosts = models.CharField(max_length=50)
+
+    class Meta:
+        abstract = True
+
+
+class ConcreteModel(AbstractModel):
+    name = models.CharField(max_length=50)
+
+
+class AbstractConcreteAbstract(ConcreteModel):
+    # abstract --> concrete --> abstract
+    class Meta:
+        abstract = True
+
+
+class ConcreteAbstractConcreteAbstract(ConcreteModel):
+    # concrete --> abstract --> concrete --> abstract
+    pass
+
+
+class ConcreteConcrete(ConcreteModel):
+    # another subclass (concrete this time) of the root concrete model
+    pass
+
+
+# 4. proxy models
+
+class SingleProxyModel(ConcreteModel):
+    class Meta:
+        proxy = True
+
+
+class DoubleProxyModel(SingleProxyModel):
+    class Meta:
+        proxy = True
+
+
+class CustomPKName(MPTTModel):
+    my_id = models.AutoField(db_column='my_custom_name', primary_key=True)
+    name = models.CharField(max_length=50)
+    parent = models.ForeignKey('self', null=True, blank=True,
+            related_name='children', db_column="my_cusom_parent")
+
+    def __unicode__(self):
+        return self.name
